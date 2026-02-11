@@ -271,3 +271,19 @@
     padding: 0.875rem;
   }
 }
+
+.seat-summary-remove {
+  margin-left: 0.75rem;
+  padding: 4px 10px;
+  font: inherit;
+  font-size: 0.8rem;
+  color: #315a6a;
+  background: transparent;
+  border: 1px solid #9fb5bd;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.seat-summary-remove:hover {
+  background: #e5eff2;
+}

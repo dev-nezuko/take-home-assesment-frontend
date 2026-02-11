@@ -1,7 +1,7 @@
-import { useMemo, useState, type FocusEvent, type KeyboardEvent, type MouseEvent } from 'react';
+import { useMemo, useRef, useState, type FocusEvent, type KeyboardEvent, type MouseEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { useSeatSelection } from '../hooks/useSeatSelection';
-import { mapViewBox, type IndexedSeat } from '../lib/venue';
+import { mapViewBox, nearestSeat, type Direction, type IndexedSeat } from '../lib/venue';
 import { Seat } from './Seat';
 import { SeatTooltip } from './SeatTooltip';
 import './SeatMap.css';
@@ -17,6 +17,13 @@ const TOOLTIP_WIDTH = 200;
 const TOOLTIP_HEIGHT = 180;
 const TOOLTIP_OFFSET = 12;
 const EDGE = 10;
+
+const ARROW_DIRECTIONS: Record<string, Direction> = {
+  ArrowLeft: 'left',
+  ArrowRight: 'right',
+  ArrowUp: 'up',
+  ArrowDown: 'down',
+};
 
 function seatIdFromEvent(event: { target: EventTarget }): string | null {
   const target = event.target as Element | null;
@@ -37,10 +44,25 @@ function tooltipPlacement(entry: IndexedSeat, seatRect: DOMRect): TooltipState {
 export function SeatMap() {
   const { venue, index, selectedIds, toggleSeat, focusSeat } = useSeatSelection();
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
+  const [tabStopId, setTabStopId] = useState<string | null>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
 
   const viewBox = useMemo(() => (index ? mapViewBox(index) : '0 0 100 100'), [index]);
 
   if (!venue || !index) return null;
+
+  // One tab stop for the whole map (roving tabindex); arrows move within it.
+  const defaultTabStop =
+    index.ordered.find((e) => e.seat.status === 'available') ?? index.ordered[0];
+  const activeTabStop =
+    tabStopId && index.byId.has(tabStopId) ? tabStopId : (defaultTabStop?.seat.id ?? null);
+
+  const moveFocusTo = (seatId: string) => {
+    const element = Array.from(
+      svgRef.current?.querySelectorAll<SVGGElement>('[data-seat-id]') ?? []
+    ).find((el) => el.dataset.seatId === seatId);
+    element?.focus();
+  };
 
   const handleClick = (event: MouseEvent<SVGSVGElement>) => {
     const seatId = seatIdFromEvent(event);
@@ -49,15 +71,26 @@ export function SeatMap() {
 
   const handleKeyDown = (event: KeyboardEvent<SVGSVGElement>) => {
     const seatId = seatIdFromEvent(event);
-    if (seatId && (event.key === 'Enter' || event.key === ' ')) {
+    if (!seatId) return;
+    if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
       toggleSeat(seatId);
+      return;
     }
+    let target: string | null = null;
+    if (event.key in ARROW_DIRECTIONS) target = nearestSeat(index, seatId, ARROW_DIRECTIONS[event.key]);
+    else if (event.key === 'Home') target = index.ordered[0]?.seat.id ?? null;
+    else if (event.key === 'End') target = index.ordered[index.ordered.length - 1]?.seat.id ?? null;
+    else return;
+    event.preventDefault();
+    if (target) moveFocusTo(target);
   };
 
   const handleFocus = (event: FocusEvent<SVGSVGElement>) => {
     const seatId = seatIdFromEvent(event);
-    if (seatId) focusSeat(seatId);
+    if (!seatId) return;
+    setTabStopId(seatId);
+    focusSeat(seatId);
   };
 
   const handleMouseOver = (event: MouseEvent<SVGSVGElement>) => {
@@ -76,10 +109,12 @@ export function SeatMap() {
     <>
       <div className="seatmap-container">
         <svg
+          ref={svgRef}
           viewBox={viewBox}
           className="seatmap-svg"
           role="group"
           aria-label={`Seating map for ${venue.name}`}
+          aria-describedby="seatmap-instructions"
           preserveAspectRatio="xMidYMid meet"
           onClick={handleClick}
           onKeyDown={handleKeyDown}
@@ -92,6 +127,8 @@ export function SeatMap() {
             return (
               <g
                 key={section.id}
+                role="group"
+                aria-label={section.label}
                 transform={`translate(${section.transform.x}, ${section.transform.y}) scale(${section.transform.scale})`}
               >
                 <text
@@ -108,7 +145,12 @@ export function SeatMap() {
                     const entry = index.byId.get(seat.id);
                     if (!entry || entry.seat !== seat) return null;
                     return (
-                      <Seat key={seat.id} entry={entry} isSelected={selectedIds.has(seat.id)} />
+                      <Seat
+                        key={seat.id}
+                        entry={entry}
+                        isSelected={selectedIds.has(seat.id)}
+                        isTabStop={seat.id === activeTabStop}
+                      />
                     );
                   })
                 )}

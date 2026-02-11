@@ -4,7 +4,7 @@ import { formatAmount, formatTierPrice, selectionSubtotal } from '../lib/pricing
 import './SeatSummary.css';
 
 export function SeatSummary() {
-  const { selectedSeats, clearSelection, index, notice } = useSeatSelection();
+  const { selectedSeats, clearSelection, removeSeat, index, notice } = useSeatSelection();
   const { total, unpriced } = selectionSubtotal(selectedSeats);
 
   return (
@@ -44,6 +44,14 @@ export function SeatSummary() {
                     </span>
                   )}
                   <span className="seat-summary-price">{formatTierPrice(seat.priceTier)}</span>
+                  <button
+                    type="button"
+                    className="seat-summary-remove"
+                    onClick={() => removeSeat(seat.seatId)}
+                    aria-label={`Remove seat ${seat.seatId}`}
+                  >
+                    Remove
+                  </button>
                 </li>
               );
             })}

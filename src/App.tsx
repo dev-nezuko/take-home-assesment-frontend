@@ -53,7 +53,14 @@ function AppContent() {
       </header>
       <main className="app-main">
         <div className="app-seatmap-section">
-          <div className="map-guide"><h2>Find your seats</h2><p>Tab to an available seat, then press Enter or Space to toggle it.</p><p className="legend">Green · available &nbsp; Blue · selected &nbsp; Orange · reserved &nbsp; Red · sold &nbsp; Grey · held</p></div>
+          <div className="map-guide">
+            <h2>Find your seats</h2>
+            <p id="seatmap-instructions">
+              Click a seat, or Tab into the map and use the arrow keys to move between seats.
+              Enter or Space toggles a seat; Home and End jump to the first and last seat.
+            </p>
+            <p className="legend">Green · available &nbsp; Blue with tick · selected &nbsp; Orange with bar · reserved &nbsp; Red with cross · sold &nbsp; Grey with ring · held</p>
+          </div>
           <SeatMap />
         </div>
         <aside className="app-sidebar">

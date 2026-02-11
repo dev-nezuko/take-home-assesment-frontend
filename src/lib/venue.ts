@@ -123,3 +123,30 @@ export function mapViewBox(index: VenueIndex): string {
     maxY - minY + pad * 2 + labelRoom,
   ].join(' ');
 }
+
+export type Direction = 'left' | 'right' | 'up' | 'down';
+
+/**
+ * Closest seat in a direction, by rendered position. Sideways drift is
+ * weighted so ArrowRight stays in the row and ArrowDown stays in the column
+ * when such a seat exists. Linear in seat count, which is fine per key press.
+ */
+export function nearestSeat(index: VenueIndex, fromId: string, direction: Direction): string | null {
+  const from = index.byId.get(fromId);
+  if (!from) return null;
+  let bestId: string | null = null;
+  let bestScore = Infinity;
+  for (const candidate of index.ordered) {
+    const dx = candidate.mapX - from.mapX;
+    const dy = candidate.mapY - from.mapY;
+    const along = direction === 'right' ? dx : direction === 'left' ? -dx : direction === 'down' ? dy : -dy;
+    const across = direction === 'left' || direction === 'right' ? dy : dx;
+    if (along < 1) continue;
+    const score = along + Math.abs(across) * 3;
+    if (score < bestScore) {
+      bestScore = score;
+      bestId = candidate.seat.id;
+    }
+  }
+  return bestId;
+}
