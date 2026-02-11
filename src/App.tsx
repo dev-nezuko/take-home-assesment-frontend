@@ -4,35 +4,29 @@ import { SeatSelectionProvider } from './context/SeatSelectionContext';
 import { SeatMap } from './components/SeatMap';
 import { SeatDetails } from './components/SeatDetails';
 import { SeatSummary } from './components/SeatSummary';
-import { Venue } from './types/venue';
+import { parseVenue } from './lib/venue';
 import './App.css';
 
 function AppContent() {
-  const { venue, setVenue } = useSeatSelection();
-  const [loading, setLoading] = useState(true);
+  const { venue, loadVenue } = useSeatSelection();
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
-    async function loadVenue() {
-      try {
-        const response = await fetch('/venue.json', { signal: controller.signal });
-        if (!response.ok) {
-          throw new Error('Failed to load venue data');
-        }
-        const data: Venue = await response.json();
-        setVenue(data);
-        setLoading(false);
-      } catch (err) {
+    fetch('/venue.json', { signal: controller.signal })
+      .then((response) => {
+        if (!response.ok) throw new Error(`Venue data request failed (${response.status})`);
+        return response.json();
+      })
+      .then((data: unknown) => loadVenue(parseVenue(data)))
+      .catch((err: unknown) => {
         if (controller.signal.aborted) return;
-        setError(err instanceof Error ? err.message : 'Unknown error');
-        setLoading(false);
-      }
-    }
-
-    loadVenue();
+        setError(err instanceof Error ? err.message : 'Venue data could not be loaded');
+      });
     return () => controller.abort();
-  }, [setVenue]);
+  }, [loadVenue]);
+
+  const loading = !venue && !error;
 
   if (loading) {
     return (
@@ -42,10 +36,10 @@ function AppContent() {
     );
   }
 
-  if (error) {
+  if (error || !venue) {
     return (
       <div className="app-error">
-        <p>Error: {error}</p>
+        <p role="alert">Error: {error}</p>
       </div>
     );
   }
@@ -54,7 +48,7 @@ function AppContent() {
     <div className="app">
       <header className="app-header">
         <p className="app-eyebrow">INTERACTIVE SEATING DEMO</p>
-        <h1>{venue?.name || 'Event Seating Map'}</h1>
+        <h1>{venue.name}</h1>
         <p>Choose up to eight seats. This is a local selection preview, not a reservation or purchase.</p>
       </header>
       <main className="app-main">

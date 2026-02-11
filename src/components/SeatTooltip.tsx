@@ -1,42 +1,21 @@
-import { Seat as SeatType } from '../types/venue';
+import type { IndexedSeat } from '../lib/venue';
+import { formatTierPrice } from '../lib/pricing';
 import './SeatTooltip.css';
 
 interface SeatTooltipProps {
-  seat: SeatType;
-  sectionLabel: string;
-  rowIndex: number;
+  entry: IndexedSeat;
   x: number;
   y: number;
-  visible: boolean;
-  position?: 'above' | 'below';
+  position: 'above' | 'below';
 }
 
-export function SeatTooltip({
-  seat,
-  sectionLabel,
-  rowIndex,
-  x,
-  y,
-  visible,
-  position = 'above',
-}: SeatTooltipProps) {
-  if (!visible) return null;
-
-  const priceTiers: Record<number, string> = {
-    1: '$50',
-    2: '$75',
-    3: '$100',
-    4: '$150',
-  };
-
+export function SeatTooltip({ entry, x, y, position }: SeatTooltipProps) {
+  const { seat, section, rowIndex } = entry;
   return (
     <div
       className={`seat-tooltip seat-tooltip-${position}`}
-      style={{
-        left: `${x}px`,
-        top: `${y}px`,
-      }}
-      role="tooltip"
+      style={{ left: `${x}px`, top: `${y}px` }}
+      aria-hidden="true"
     >
       <div className="seat-tooltip-content">
         <div className="seat-tooltip-header">
@@ -45,7 +24,7 @@ export function SeatTooltip({
         <div className="seat-tooltip-body">
           <div className="seat-tooltip-row">
             <span className="seat-tooltip-label">Section:</span>
-            <span className="seat-tooltip-value">{sectionLabel}</span>
+            <span className="seat-tooltip-value">{section.label}</span>
           </div>
           <div className="seat-tooltip-row">
             <span className="seat-tooltip-label">Row:</span>
@@ -63,9 +42,7 @@ export function SeatTooltip({
           </div>
           <div className="seat-tooltip-row">
             <span className="seat-tooltip-label">Price:</span>
-            <span className="seat-tooltip-value">
-              {priceTiers[seat.priceTier] || 'N/A'}
-            </span>
+            <span className="seat-tooltip-value">{formatTierPrice(seat.priceTier)}</span>
           </div>
         </div>
       </div>

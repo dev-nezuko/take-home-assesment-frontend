@@ -1,204 +1,123 @@
-import React, { memo, useCallback, useState, useRef } from 'react';
+import { useMemo, useState, type FocusEvent, type KeyboardEvent, type MouseEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { useSeatSelection } from '../hooks/useSeatSelection';
+import { mapViewBox, type IndexedSeat } from '../lib/venue';
 import { Seat } from './Seat';
 import { SeatTooltip } from './SeatTooltip';
-import { Seat as SeatType } from '../types/venue';
 import './SeatMap.css';
 
-function SeatMapComponent() {
-  const {
-    venue,
-    selectedSeats,
-    selectSeat,
-    deselectSeat,
-    setSelectedSeat,
-    canSelectMore,
-  } = useSeatSelection();
+interface TooltipState {
+  entry: IndexedSeat;
+  x: number;
+  y: number;
+  position: 'above' | 'below';
+}
 
-  const [tooltip, setTooltip] = useState<{
-    seat: SeatType;
-    sectionLabel: string;
-    rowIndex: number;
-    x: number;
-    y: number;
-    position: 'above' | 'below';
-  } | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
+const TOOLTIP_WIDTH = 200;
+const TOOLTIP_HEIGHT = 180;
+const TOOLTIP_OFFSET = 12;
+const EDGE = 10;
 
-  const handleSeatClick = useCallback(
-    (seatId: string, sectionId: string, rowIndex: number) => {
-      if (!venue) return;
-      const section = venue.sections.find((s) => s.id === sectionId);
-      if (!section) return;
+function seatIdFromEvent(event: { target: EventTarget }): string | null {
+  const target = event.target as Element | null;
+  return target?.closest?.('[data-seat-id]')?.getAttribute('data-seat-id') ?? null;
+}
 
-      const row = section.rows.find((r) => r.index === rowIndex);
-      if (!row) return;
-
-      const seat = row.seats.find((s) => s.id === seatId);
-      if (!seat || seat.status !== 'available') return;
-
-      const isSelected = selectedSeats.some((s) => s.seatId === seatId);
-
-      if (isSelected) {
-        deselectSeat(seatId);
-        setSelectedSeat(null);
-      } else {
-        if (canSelectMore) {
-          selectSeat(seat, sectionId, rowIndex);
-          setSelectedSeat(seat);
-        }
-      }
-    },
-    [venue, selectedSeats, selectSeat, deselectSeat, setSelectedSeat, canSelectMore]
+function tooltipPlacement(entry: IndexedSeat, seatRect: DOMRect): TooltipState {
+  const x = Math.min(
+    Math.max(seatRect.left + seatRect.width / 2, TOOLTIP_WIDTH / 2 + EDGE),
+    window.innerWidth - TOOLTIP_WIDTH / 2 - EDGE
   );
+  const fitsAbove = seatRect.top - TOOLTIP_OFFSET - TOOLTIP_HEIGHT >= EDGE;
+  return fitsAbove
+    ? { entry, x, y: seatRect.top - TOOLTIP_OFFSET, position: 'above' }
+    : { entry, x, y: seatRect.bottom + TOOLTIP_OFFSET, position: 'below' };
+}
 
-  const handleSeatKeyDown = useCallback(
-    (e: React.KeyboardEvent, seatId: string, sectionId: string, rowIndex: number) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        handleSeatClick(seatId, sectionId, rowIndex);
-      }
-    },
-    [handleSeatClick]
-  );
+export function SeatMap() {
+  const { venue, index, selectedIds, toggleSeat, focusSeat } = useSeatSelection();
+  const [tooltip, setTooltip] = useState<TooltipState | null>(null);
 
-  const handleSeatFocus = useCallback(
-    (seatId: string) => {
-      if (!venue) return;
-      const section = venue.sections.find((s) =>
-        s.rows.some((r) => r.seats.some((seat) => seat.id === seatId))
-      );
-      if (!section) return;
+  const viewBox = useMemo(() => (index ? mapViewBox(index) : '0 0 100 100'), [index]);
 
-      const row = section.rows.find((r) =>
-        r.seats.some((seat) => seat.id === seatId)
-      );
-      if (!row) return;
+  if (!venue || !index) return null;
 
-      const seat = row.seats.find((s) => s.id === seatId);
-      if (seat) {
-        setSelectedSeat(seat);
-      }
-    },
-    [venue, setSelectedSeat]
-  );
+  const handleClick = (event: MouseEvent<SVGSVGElement>) => {
+    const seatId = seatIdFromEvent(event);
+    if (seatId) toggleSeat(seatId);
+  };
 
-  const handleSeatMouseEnter = useCallback(
-    (e: React.MouseEvent<SVGRectElement>, seat: SeatType, sectionId: string, rowIndex: number) => {
-      if (!containerRef.current) return;
+  const handleKeyDown = (event: KeyboardEvent<SVGSVGElement>) => {
+    const seatId = seatIdFromEvent(event);
+    if (seatId && (event.key === 'Enter' || event.key === ' ')) {
+      event.preventDefault();
+      toggleSeat(seatId);
+    }
+  };
 
-      if (!venue) return;
-      const section = venue.sections.find((s) => s.id === sectionId);
-      if (!section) return;
+  const handleFocus = (event: FocusEvent<SVGSVGElement>) => {
+    const seatId = seatIdFromEvent(event);
+    if (seatId) focusSeat(seatId);
+  };
 
-      const svgRect = e.currentTarget.getBoundingClientRect();
-      const viewportWidth = window.innerWidth;
-      const viewportHeight = window.innerHeight;
-      
-      const tooltipWidth = 200;
-      const tooltipHeight = 180;
-      const offset = 12;
-      
-      let x = svgRect.left + svgRect.width / 2;
-      let y = svgRect.top - offset;
-      
-      if (x - tooltipWidth / 2 < 10) {
-        x = tooltipWidth / 2 + 10;
-      } else if (x + tooltipWidth / 2 > viewportWidth - 10) {
-        x = viewportWidth - tooltipWidth / 2 - 10;
-      }
-      
-      let tooltipPosition: 'above' | 'below' = 'above';
-      
-      if (y - tooltipHeight < 10) {
-        y = svgRect.bottom + offset;
-        tooltipPosition = 'below';
-      }
-      
-      if (y + tooltipHeight > viewportHeight - 10) {
-        y = viewportHeight - tooltipHeight - 10;
-        if (svgRect.top - tooltipHeight > 10) {
-          y = svgRect.top - offset;
-          tooltipPosition = 'above';
-        }
-      }
-      
-      setTooltip({
-        seat,
-        sectionLabel: section.label,
-        rowIndex,
-        x,
-        y,
-        position: tooltipPosition,
-      });
-    },
-    [venue]
-  );
+  const handleMouseOver = (event: MouseEvent<SVGSVGElement>) => {
+    const seatId = seatIdFromEvent(event);
+    const entry = seatId ? index.byId.get(seatId) : undefined;
+    if (!entry) return;
+    const element = (event.target as Element).closest('[data-seat-id]');
+    if (element) setTooltip(tooltipPlacement(entry, element.getBoundingClientRect()));
+  };
 
-  const handleSeatMouseLeave = useCallback(() => {
-    setTooltip(null);
-  }, []);
-
-  if (!venue) {
-    return <div className="seatmap-loading">Loading venue data...</div>;
-  }
+  const handleMouseOut = (event: MouseEvent<SVGSVGElement>) => {
+    if (seatIdFromEvent(event)) setTooltip(null);
+  };
 
   return (
     <>
-      <div className="seatmap-container" ref={containerRef}>
+      <div className="seatmap-container">
         <svg
-          viewBox={`0 -10 ${Math.max(...venue.sections.flatMap(section => section.rows.flatMap(row => row.seats.map(seat => section.transform.x + seat.x * section.transform.scale)))) + 60} ${Math.max(...venue.sections.flatMap(section => section.rows.flatMap(row => row.seats.map(seat => section.transform.y + seat.y * section.transform.scale)))) + 80}`}
+          viewBox={viewBox}
           className="seatmap-svg"
-          aria-label={`Seating map for ${venue.name}`}
           role="group"
+          aria-label={`Seating map for ${venue.name}`}
           preserveAspectRatio="xMidYMid meet"
+          onClick={handleClick}
+          onKeyDown={handleKeyDown}
+          onFocus={handleFocus}
+          onMouseOver={handleMouseOver}
+          onMouseOut={handleMouseOut}
         >
-          {venue.sections.map((section) => (
-            <g key={section.id} transform={`translate(${section.transform.x}, ${section.transform.y}) scale(${section.transform.scale})`}>
-            <text x={section.rows[0]?.seats[0]?.x || 0} y={(section.rows[0]?.seats[0]?.y || 40) - 25} fontSize="14" fill="#425c66">{section.label}</text>
-            {section.rows.map((row) =>
-              row.seats.map((seat) => {
-                const isSelected = selectedSeats.some(
-                  (s) => s.seatId === seat.id
-                );
-                return (
-                  <Seat
-                    key={seat.id}
-                    seat={seat}
-                    sectionId={section.id}
-                    rowIndex={row.index}
-                    isSelected={isSelected}
-                    onClick={() => handleSeatClick(seat.id, section.id, row.index)}
-                    onFocus={() => handleSeatFocus(seat.id)}
-                    onKeyDown={(e) =>
-                      handleSeatKeyDown(e, seat.id, section.id, row.index)
-                    }
-                    onMouseEnter={(e) => handleSeatMouseEnter(e, seat, section.id, row.index)}
-                    onMouseLeave={handleSeatMouseLeave}
-                  />
-                );
-              })
-            )}
-            </g>
-          ))}
+          {venue.sections.map((section) => {
+            const firstSeat = section.rows[0]?.seats[0];
+            return (
+              <g
+                key={section.id}
+                transform={`translate(${section.transform.x}, ${section.transform.y}) scale(${section.transform.scale})`}
+              >
+                <text
+                  x={(firstSeat?.x ?? 0) - 10}
+                  y={(firstSeat?.y ?? 40) - 25}
+                  fontSize="14"
+                  fill="#425c66"
+                  aria-hidden="true"
+                >
+                  {section.label}
+                </text>
+                {section.rows.map((row) =>
+                  row.seats.map((seat) => {
+                    const entry = index.byId.get(seat.id);
+                    if (!entry || entry.seat !== seat) return null;
+                    return (
+                      <Seat key={seat.id} entry={entry} isSelected={selectedIds.has(seat.id)} />
+                    );
+                  })
+                )}
+              </g>
+            );
+          })}
         </svg>
       </div>
-      {tooltip &&
-        createPortal(
-          <SeatTooltip
-            seat={tooltip.seat}
-            sectionLabel={tooltip.sectionLabel}
-            rowIndex={tooltip.rowIndex}
-            x={tooltip.x}
-            y={tooltip.y}
-            visible={true}
-            position={tooltip.position}
-          />,
-          document.body
-        )}
+      {tooltip && createPortal(<SeatTooltip {...tooltip} />, document.body)}
     </>
   );
 }
-
-export const SeatMap = memo(SeatMapComponent);
