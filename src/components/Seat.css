@@ -1,0 +1,68 @@
+.seat {
+  transition: none;
+}
+
+.seat rect {
+  transition: opacity 0.15s ease, stroke-width 0.15s ease, filter 0.15s ease;
+}
+
+.seat-interactive {
+  cursor: pointer;
+}
+
+.seat-interactive:hover rect {
+  opacity: 0.9;
+  stroke-width: 2.5;
+  filter: brightness(1.15);
+}
+
+.seat-interactive:active rect {
+  opacity: 0.85;
+  filter: brightness(1.05);
+}
+
+.seat-interactive:focus rect {
+  outline: 3px solid #2196F3;
+  outline-offset: 3px;
+  box-shadow: 0 0 0 4px rgba(33, 150, 243, 0.2);
+}
+
+.seat-selected rect {
+  filter: brightness(1.15) drop-shadow(0 2px 4px rgba(33, 150, 243, 0.4));
+  animation: pulse-selected 2s ease-in-out infinite;
+}
+
+@keyframes pulse-selected {
+  0%, 100% {
+    filter: brightness(1.15) drop-shadow(0 2px 4px rgba(33, 150, 243, 0.4));
+  }
+  50% {
+    filter: brightness(1.25) drop-shadow(0 4px 8px rgba(33, 150, 243, 0.6));
+  }
+}
+
+/* Touch devices - larger touch targets */
+@media (max-width: 768px) {
+  .seat-interactive rect {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .seat-interactive:hover rect {
+    opacity: 0.9;
+    filter: brightness(1.1);
+  }
+
+  .seat-interactive:active rect {
+    opacity: 0.85;
+    filter: brightness(1.0);
+  }
+}
+
+/* Small mobile - even larger touch targets */
+@media (max-width: 480px) {
+  .seat-interactive rect {
+    min-width: 48px;
+    min-height: 48px;
+  }
+}
