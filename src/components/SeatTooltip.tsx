@@ -46,7 +46,6 @@ export function SeatTooltip({ entry, x, y, position }: SeatTooltipProps) {
           </div>
         </div>
       </div>
-      <div className="seat-tooltip-arrow"></div>
     </div>
   );
 }

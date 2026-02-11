@@ -70,7 +70,7 @@ describe('seat map', () => {
     const details = screen.getByRole('region', { name: 'Seat details' });
     expect(details).toHaveTextContent('B-1-1');
     expect(details).toHaveTextContent('$100');
-    expect(details).toHaveTextContent('in your selection');
+    expect(within(details).getByText('selected')).toHaveClass('status-selected');
   });
 });
 

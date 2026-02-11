@@ -107,6 +107,7 @@ export function SeatMap() {
 
   return (
     <>
+      <p className="seatmap-scroll-hint">Scroll the map sideways to see every section.</p>
       <div className="seatmap-container">
         <svg
           ref={svgRef}
@@ -134,8 +135,7 @@ export function SeatMap() {
                 <text
                   x={(firstSeat?.x ?? 0) - 10}
                   y={(firstSeat?.y ?? 40) - 25}
-                  fontSize="14"
-                  fill="#425c66"
+                  className="section-label"
                   aria-hidden="true"
                 >
                   {section.label}

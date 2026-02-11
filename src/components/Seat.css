@@ -8,15 +8,16 @@
 }
 
 .seat-shape {
-  stroke: #333;
+  stroke: rgba(0, 0, 0, 0.25);
   stroke-width: 1;
+  transition: transform 120ms ease;
 }
 
-.seat-available .seat-shape { fill: #4caf50; }
-.seat-reserved .seat-shape { fill: #ff9800; }
-.seat-sold .seat-shape { fill: #f44336; }
-.seat-held .seat-shape { fill: #9e9e9e; }
-.seat-selected .seat-shape { fill: #2196f3; stroke: #1976d2; stroke-width: 2; }
+.seat-available .seat-shape { fill: var(--seat-available); }
+.seat-reserved .seat-shape { fill: var(--seat-reserved); }
+.seat-sold .seat-shape { fill: var(--seat-sold); }
+.seat-held .seat-shape { fill: var(--seat-held); }
+.seat-selected .seat-shape { fill: var(--seat-selected); stroke: var(--accent-ink); stroke-width: 1.5; }
 
 .seat-mark {
   fill: none;
@@ -33,10 +34,14 @@
   stroke-width: 2.5;
 }
 
+.seat:focus-visible {
+  outline: none;
+}
+
 .seat:focus-visible .seat-focus-ring {
-  stroke: #183b49;
+  stroke: var(--ink);
 }
 
 .seat-available:hover .seat-shape {
-  stroke-width: 2.5;
+  transform: scale(1.12);
 }

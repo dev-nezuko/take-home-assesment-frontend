@@ -9,7 +9,7 @@ export function SeatDetails() {
   if (!entry) {
     return (
       <div className="seat-details">
-        <p className="seat-details-placeholder">Click or focus on a seat to view details</p>
+        <p className="seat-details-placeholder">Hover, click or focus a seat to see its section, row and price.</p>
       </div>
     );
   }
@@ -17,35 +17,35 @@ export function SeatDetails() {
   const { seat, section, rowIndex } = entry;
   return (
     <div className="seat-details" role="region" aria-label="Seat details">
-      <h3 className="seat-details-title">Seat Information</h3>
+      <h3 className="seat-details-title">Seat details</h3>
       <dl className="seat-details-list">
         <div className="seat-details-item">
-          <dt>Seat ID:</dt>
+          <dt>Seat</dt>
           <dd>{seat.id}</dd>
         </div>
         <div className="seat-details-item">
-          <dt>Section:</dt>
+          <dt>Section</dt>
           <dd>{section.label}</dd>
         </div>
         <div className="seat-details-item">
-          <dt>Row:</dt>
+          <dt>Row</dt>
           <dd>{rowIndex}</dd>
         </div>
         <div className="seat-details-item">
-          <dt>Column:</dt>
+          <dt>Number</dt>
           <dd>{seat.col}</dd>
         </div>
         <div className="seat-details-item">
-          <dt>Price Tier:</dt>
+          <dt>Price</dt>
           <dd>
-            {seat.priceTier} ({formatTierPrice(seat.priceTier)})
+            {formatTierPrice(seat.priceTier)} (tier {seat.priceTier})
           </dd>
         </div>
         <div className="seat-details-item">
-          <dt>Status:</dt>
+          <dt>Status</dt>
           <dd>
-            <span className={`status-badge status-${seat.status}`}>
-              {selectedIds.has(seat.id) ? 'in your selection' : seat.status}
+            <span className={`status-badge status-${selectedIds.has(seat.id) ? 'selected' : seat.status}`}>
+              {selectedIds.has(seat.id) ? 'selected' : seat.status}
             </span>
           </dd>
         </div>

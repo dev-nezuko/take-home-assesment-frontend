@@ -12,37 +12,33 @@ export function SeatSummary() {
       <p className="visually-hidden" role="status" aria-live="polite">
         {notice}
       </p>
+      <div className="seat-summary-header">
+        <h3 className="seat-summary-title">
+          Your seats{' '}
+          <span className="seat-summary-count">
+            ({selectedSeats.length}/{MAX_SELECTION})
+          </span>
+        </h3>
+      </div>
       {selectedSeats.length === 0 ? (
-        <>
-          <h3 className="seat-summary-title">Selection Summary</h3>
-          <div className="seat-summary-empty">
-            <p>No seats selected</p>
-            <p className="seat-summary-hint">
-              Select up to {MAX_SELECTION} seats by clicking on available seats
-            </p>
-          </div>
-        </>
+        <div className="seat-summary-empty">
+          <p>No seats selected</p>
+          <p className="seat-summary-hint">
+            Pick up to {MAX_SELECTION} available seats. Your choice is kept in this browser
+            only; nothing is reserved.
+          </p>
+        </div>
       ) : (
         <>
-          <div className="seat-summary-header">
-            <h3 className="seat-summary-title">
-              Selection Summary ({selectedSeats.length}/{MAX_SELECTION})
-            </h3>
-            <button type="button" className="seat-summary-clear" onClick={clearSelection}>
-              Clear all
-            </button>
-          </div>
           <ul className="seat-summary-list" aria-label="Selected seats">
             {selectedSeats.map((seat) => {
               const section = index?.byId.get(seat.seatId)?.section;
               return (
                 <li key={seat.seatId} className="seat-summary-item">
                   <span className="seat-summary-seat-id">{seat.seatId}</span>
-                  {section && (
-                    <span className="seat-summary-section">
-                      {section.label} Row {seat.rowIndex}
-                    </span>
-                  )}
+                  <span className="seat-summary-section">
+                    {section ? `${section.label}, row ${seat.rowIndex}` : `Row ${seat.rowIndex}`}
+                  </span>
                   <span className="seat-summary-price">{formatTierPrice(seat.priceTier)}</span>
                   <button
                     type="button"
@@ -67,6 +63,9 @@ export function SeatSummary() {
                 {unpriced === 1 ? 'is' : 'are'} not included.
               </p>
             )}
+            <button type="button" className="seat-summary-clear" onClick={clearSelection}>
+              Clear all
+            </button>
           </div>
         </>
       )}

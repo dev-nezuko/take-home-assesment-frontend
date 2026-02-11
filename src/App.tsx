@@ -4,6 +4,7 @@ import { SeatSelectionProvider } from './context/SeatSelectionContext';
 import { SeatMap } from './components/SeatMap';
 import { SeatDetails } from './components/SeatDetails';
 import { SeatSummary } from './components/SeatSummary';
+import { Legend } from './components/Legend';
 import { parseVenue } from './lib/venue';
 import './App.css';
 
@@ -30,16 +31,20 @@ function AppContent() {
 
   if (loading) {
     return (
-      <div className="app-loading">
-        <p>Loading venue data...</p>
+      <div className="app-status" aria-busy="true">
+        <div className="app-status-spinner" aria-hidden="true" />
+        <p>Loading the venue map…</p>
       </div>
     );
   }
 
   if (error || !venue) {
     return (
-      <div className="app-error">
+      <div className="app-status app-status-error">
         <p role="alert">Error: {error}</p>
+        <button type="button" className="app-retry" onClick={() => window.location.reload()}>
+          Try again
+        </button>
       </div>
     );
   }
@@ -47,25 +52,28 @@ function AppContent() {
   return (
     <div className="app">
       <header className="app-header">
-        <p className="app-eyebrow">INTERACTIVE SEATING DEMO</p>
+        <p className="app-eyebrow">Seat picker · demo venue</p>
         <h1>{venue.name}</h1>
-        <p>Choose up to eight seats. This is a local selection preview, not a reservation or purchase.</p>
+        <p>
+          Choose up to eight seats. This is a local selection preview: nothing is held,
+          reserved or charged.
+        </p>
       </header>
       <main className="app-main">
-        <div className="app-seatmap-section">
+        <section className="app-seatmap-section" aria-labelledby="map-heading">
           <div className="map-guide">
-            <h2>Find your seats</h2>
+            <h2 id="map-heading">Find your seats</h2>
             <p id="seatmap-instructions">
               Click a seat, or Tab into the map and use the arrow keys to move between seats.
               Enter or Space toggles a seat; Home and End jump to the first and last seat.
             </p>
-            <p className="legend">Green · available &nbsp; Blue with tick · selected &nbsp; Orange with bar · reserved &nbsp; Red with cross · sold &nbsp; Grey with ring · held</p>
           </div>
+          <Legend />
           <SeatMap />
-        </div>
-        <aside className="app-sidebar">
-          <SeatDetails />
+        </section>
+        <aside className="app-sidebar" aria-label="Your selection">
           <SeatSummary />
+          <SeatDetails />
         </aside>
       </main>
     </div>
