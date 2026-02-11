@@ -77,10 +77,10 @@ export function SeatMap() {
       toggleSeat(seatId);
       return;
     }
-    let target: string | null = null;
+    let target: string | null;
     if (event.key in ARROW_DIRECTIONS) target = nearestSeat(index, seatId, ARROW_DIRECTIONS[event.key]);
     else if (event.key === 'Home') target = index.ordered[0]?.seat.id ?? null;
-    else if (event.key === 'End') target = index.ordered[index.ordered.length - 1]?.seat.id ?? null;
+    else if (event.key === 'End') target = index.ordered.at(-1)?.seat.id ?? null;
     else return;
     event.preventDefault();
     if (target) moveFocusTo(target);
